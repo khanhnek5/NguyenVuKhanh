@@ -1,0 +1,123 @@
+name: Daily Key + YeuMoney Shortlink
+
+# chạy hàng ngày (0:00 UTC) + cho phép trigger thủ công
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  generate-and-short:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Generate key, create shortlink, write files
+        env:
+          YEUMONEY_API_TOKEN: ${{ secrets.YEUMONEY_API_TOKEN }}
+          # chỉnh INDEX_URL nếu repo/pages khác
+          INDEX_HTML_URL: "https://khanhnek5.github.io/NguyenVuKhanh/index.html"
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+import os, random, string, json, urllib.parse, requests, sys
+from datetime import datetime
+
+# Config from env
+API_TOKEN = os.environ.get("YEUMONEY_API_TOKEN")
+INDEX_HTML = os.environ.get("INDEX_HTML_URL").rstrip('/')
+
+if not API_TOKEN:
+    print("ERROR: YEUMONEY_API_TOKEN missing")
+    sys.exit(2)
+
+# 1) Generate key: format KhanhMG-<6 chars, letters+digits mixed case>
+def gen_key(n=6):
+    chars = string.ascii_letters + string.digits
+    return "KhanhMG-" + ''.join(random.choices(chars, k=n))
+
+key = gen_key(6)
+print("Generated key:", key)
+
+# 2) Write key_today.json
+data = {"key": key, "generated_at": datetime.utcnow().isoformat()+"Z"}
+with open("key_today.json","w",encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+print("Wrote key_today.json")
+
+# 3) Build target URL that includes token param
+# target will be index.html?t=<key>
+target = INDEX_HTML + "?t=" + urllib.parse.quote(key, safe='')
+print("Target URL:", target)
+
+# 4) Call YeuMoney API (format=text)
+api = f"https://yeumoney.com/QL_api.php?token={API_TOKEN}&format=text&url={urllib.parse.quote(target, safe='')}"
+print("Calling YeuMoney API...")
+try:
+    r = requests.get(api, timeout=15)
+    r.raise_for_status()
+    short = r.text.strip()
+    if not short:
+        print("ERROR: YeuMoney returned empty response")
+        sys.exit(3)
+    # Save shortlink to file
+    with open("yeu_shortlink.txt","w",encoding="utf-8") as f:
+        f.write(short + "\n")
+    print("Wrote yeu_shortlink.txt ->", short)
+    # Create simple redirect.html that points to target (not to shortlink)
+    # We save redirect.html that will redirect to the shortlink (so user clicking shortlink ends up at redirect and then to index?t)
+    redirect_html = f"""<!doctype html>
+<meta charset="utf-8">
+<title>Redirecting...</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{{font-family:Arial;padding:40px;background:#071022;color:#eef3f5;text-align:center}}</style>
+<h2>Chuyển hướng tới trang lấy key...</h2>
+<p>Nếu không tự động, <a href="{short}">click vào đây</a>.</p>
+<script>setTimeout(()=>location.href="{short}",700);</script>
+"""
+    with open("redirect.html","w",encoding="utf-8") as f:
+        f.write(redirect_html)
+    print("Wrote redirect.html")
+except Exception as e:
+    print("ERROR calling YeuMoney API:", e)
+    sys.exit(4)
+PY
+
+      - name: Commit & push generated files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add key_today.json yeu_shortlink.txt redirect.html || true
+          # commit only if changed
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-update daily key & YeuMoney shortlink [skip ci]"
+            git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
+          fi
+        token_today = generate_daily_token()
+        index_url = f"{INDEX_HTML_URL}?t={token_today}"
+
+        short_link = shorten_yeumoney(index_url, YEUMONEY_API_TOKEN)
+        if short_link:
+            with open("yeu_shortlink.txt", "w") as f: f.write(short_link)
+            with open("redirect.html", "w") as f:
+                f.write(f'<meta http-equiv="refresh" content="0; url={index_url}">')
+        else:
+            print("❌ Không tạo được link rút gọn hôm nay")
+
+    - name: Commit updated files
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add yeu_shortlink.txt redirect.html
+        git commit -m "Cập nhật token & link rút gọn hôm nay"
+        git push
