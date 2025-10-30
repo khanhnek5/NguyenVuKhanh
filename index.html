@@ -3,84 +3,47 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nhận Key Tool Hôm Nay</title>
+<title>Key Free Hôm Nay</title>
 <style>
-body { font-family: Arial, sans-serif; background: #071022; color: #eef3f5; text-align: center; padding: 50px; }
-h1 { color: #16a085; }
-button { background: #16a085; color: #fff; border: none; padding: 10px 20px; cursor: pointer; margin-top: 10px; border-radius: 5px; }
-button:hover { background: #138f75; }
-#key-box { font-size: 24px; margin: 20px 0; user-select: all; }
-#countdown { margin-top: 10px; font-size: 18px; color: #f39c12; }
+body { font-family: Arial, sans-serif; background: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin:0; }
+.container { text-align: center; background: #1f1f1f; padding: 30px; border-radius: 12px; box-shadow: 0 0 15px #000; }
+h1 { color: #ffd700; }
+.key-box { margin: 20px 0; padding: 15px; background: #333; border-radius: 8px; font-size: 1.5em; word-break: break-all; user-select: all; cursor: pointer; }
+.logo { width: 120px; margin-bottom: 20px; }
 </style>
 </head>
 <body>
-
-<h1>🔑 Key Tool Hôm Nay 🔑</h1>
-<p id="message">Đang kiểm tra token...</p>
-<div id="key-box"></div>
-<button id="copyBtn">Copy Key</button>
-<div id="countdown"></div>
+<div class="container">
+<img class="logo" src="https://sf-static.upanhlaylink.com/img/image_2025103134746677a16d9e7c9ddd1cbb6ae1c575.jpg" alt="Logo">
+<h1>Key Free Hôm Nay</h1>
+<div class="key-box" id="key">Key chưa sẵn sàng, vượt link YeuMoney để nhận key</div>
+</div>
 
 <script>
-(async function(){
-    const message = document.getElementById('message');
-    const keyBox = document.getElementById('key-box');
-    const countdownEl = document.getElementById('countdown');
-    const copyBtn = document.getElementById('copyBtn');
+// Link chứa key hôm nay đã được tạo tự động
+const keyUrl = "https://raw.githubusercontent.com/khanhnek5/NguyenVuKhanh/main/key_today.json";
 
-    // Lấy token từ URL (Yeumoney redirect sẽ trả ?t=<token>)
-    const urlParams = new URLSearchParams(window.location.search);
-    const tokenParam = urlParams.get('t');
-
-    if(!tokenParam){
-        message.innerHTML = "❌ Vui lòng click link YeuMoney để lấy token.";
-        copyBtn.style.display = 'none';
-        return;
-    }
-
+// Hàm kiểm tra token YeuMoney bằng cách fetch link rút gọn
+async function checkTokenAndShowKey(userShortlink) {
     try {
-        // Kiểm tra token hợp lệ theo ngày
-        const todayPrefix = new Date().toISOString().slice(0,10).replace(/-/g,''); // YYYYMMDD
-        if(!tokenParam.startsWith(todayPrefix)){
-            message.textContent = "❌ Token không hợp lệ. Vui lòng vượt link YeuMoney hôm nay.";
-            copyBtn.style.display = 'none';
-            return;
+        const res = await fetch(userShortlink, { method: 'GET', redirect: 'manual' });
+        if(res.status === 302 || res.status === 200){
+            // Token hợp lệ, hiển thị key
+            const keyRes = await fetch(keyUrl);
+            const keyData = await keyRes.json();
+            document.getElementById('key').innerText = keyData.key;
+        } else {
+            document.getElementById('key').innerText = "Bạn phải vượt link YeuMoney để nhận key";
         }
-
-        // Tạo key hiển thị
-        const key = 'KhanhMG-' + tokenParam;
-        keyBox.textContent = key;
-        message.textContent = "✅ Key hôm nay của bạn:";
-
-        // Đếm ngược tới 0h00 hôm sau
-        function updateCountdown(){
-            const now = new Date();
-            const tomorrow = new Date();
-            tomorrow.setHours(24,0,0,0);
-            const diff = tomorrow - now;
-            if(diff <= 0){
-                countdownEl.textContent = "⏳ Key đã hết hạn.";
-                return;
-            }
-            const h = Math.floor(diff/1000/3600);
-            const m = Math.floor(diff/1000/60)%60;
-            const s = Math.floor(diff/1000)%60;
-            countdownEl.textContent = `⏳ Hết hạn sau: ${h} giờ ${m} phút ${s} giây`;
-        }
-        updateCountdown();
-        setInterval(updateCountdown, 1000);
-
-        // Copy button
-        copyBtn.onclick = () => {
-            navigator.clipboard.writeText(key).then(()=>alert("✅ Key đã copy!"));
-        }
-
-    } catch(err){
-        message.textContent = "❌ Lỗi khi lấy key: " + err;
-        copyBtn.style.display = 'none';
+    } catch(e){
+        document.getElementById('key').innerText = "Bạn phải vượt link YeuMoney để nhận key";
+        console.error(e);
     }
-})();
-</script>
+}
 
+// Yêu cầu người dùng nhập link YeuMoney đã vượt
+const userInput = prompt("Dán link YeuMoney bạn vừa vượt:");
+if(userInput) checkTokenAndShowKey(userInput);
+</script>
 </body>
 </html>
