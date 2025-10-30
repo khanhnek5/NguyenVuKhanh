@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>KhanhMG — Key Hôm Nay</title>
+<style>
+  :root{--bg:#0f1720;--card:#0b1220;--accent:#16a085;--muted:#9aa9b2}
+  html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
+  body{display:flex;align-items:center;justify-content:center;background:
+    radial-gradient(1200px 600px at 10% 20%, rgba(28, 168, 173, .12), transparent),
+    linear-gradient(180deg,#071022 0%, #071622 100%);color:#eef3f5}
+  .box{width:min(720px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:28px;box-shadow:0 8px 30px rgba(2,6,23,.6);border:1px solid rgba(255,255,255,0.03)}
+  h1{margin:0;font-size:20px;letter-spacing:0.4px}
+  p.lead{margin:8px 0 18px;color:var(--muted);font-size:14px}
+  .key{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; background:rgba(0,0,0,0.22);padding:14px 18px;border-radius:10px;display:inline-block;font-size:18px}
+  .meta{margin-top:12px;color:var(--muted);font-size:13px}
+  .row{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
+  button{cursor:pointer;border:0;padding:10px 14px;border-radius:8px;background:var(--accent);color:#052016;font-weight:600}
+  button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+  .small{font-size:13px;color:var(--muted)}
+  footer{margin-top:18px;color:var(--muted);font-size:12px}
+  @media (max-width:420px){ .key{font-size:16px;padding:12px} }
+</style>
+</head>
+<body>
+  <div class="box" role="main">
+    <h1>🔐 Mã kích hoạt hàng ngày — KhanhMG</h1>
+    <p class="lead">Mỗi ngày chỉ có 1 key hợp lệ. Key thay đổi lúc 00:00 theo giờ thiết bị.</p>
+
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div id="key" class="key">Đang tạo key…</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="row">
+          <button id="btnCopy">Sao chép</button>
+          <button id="btnRefresh" class="ghost">Tạo lại</button>
+        </div>
+        <div class="meta">Key mẫu: <code class="small">KhanhMG-&lt;10 ký tự (A-Za-z0-9)&gt;</code></div>
+      </div>
+    </div>
+
+    <div class="small" style="margin-top:14px">
+      <div>Ngày (thiết bị): <span id="localDate">—
