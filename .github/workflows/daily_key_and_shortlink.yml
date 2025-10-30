@@ -1,54 +1,39 @@
-name: Daily Key & Shortlink
+name: Daily Key & YeuMoney Shortlink
 
 on:
   schedule:
-    - cron: '0 0 * * *' # chạy mỗi 0h00 UTC
+    - cron: '0 0 * * *' # 00:00 UTC mỗi ngày
   workflow_dispatch:
 
 jobs:
-  generate_key:
+  generate-and-short:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.12
+          python-version: '3.x'
 
-      - name: Generate daily key
+      - name: Run generate_key script
+        env:
+          YEUMONEY_API_TOKEN: ${{ secrets.YEUMONEY_API_TOKEN }}
+          INDEX_HTML_URL: "https://khanhnek5.github.io/NguyenVuKhanh/index.html"
         run: |
-          import json, random, string, datetime, urllib.parse, requests, os
+          python3 scripts/generate_key.py
 
-          # Sinh key ngẫu nhiên
-          key_prefix = "KhanhMG-"
-          key_random = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-          key = key_prefix + key_random
-
-          # Lưu key hôm nay
-          data = {"key": key, "date": str(datetime.date.today())}
-          with open("key_today.json", "w") as f:
-              json.dump(data, f)
-
-          # Rút gọn link YeuMoney
-          yeu_api_token = "769323f441b8e15f97640d5d716bd50098b884b4328a599152cbcf1519af4b84"
-          original_url = f"https://raw.githubusercontent.com/{os.environ['GITHUB_REPOSITORY']}/main/key_today.json"
-          api_url = f"https://yeumoney.com/QL_api.php?token={yeu_api_token}&url={urllib.parse.quote(original_url)}&format=json"
-
-          try:
-              res = requests.get(api_url, timeout=20).json()
-              shortlink = res.get("shortenedUrl", "")
-          except:
-              shortlink = ""
-
-          with open("yeu_shortlink.txt", "w") as f:
-              f.write(shortlink)
-
-      - name: Commit & Push
+      - name: Commit & push generated files
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add key_today.json yeu_shortlink.txt
-          git commit -m "Update key và shortlink"
-          git push
+          git config user.email "actions@github.com"
+          git add key_today.json yeu_shortlink.txt redirect.html || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-update daily key & YeuMoney shortlink [skip ci]"
+            git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
+          fi
