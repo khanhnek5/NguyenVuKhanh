@@ -1,0 +1,55 @@
+name: Daily Token & YeuMoney Shortlink
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  generate-token:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+    - name: Generate token & YeuMoney link
+      run: |
+        import requests, random, urllib.parse
+        from datetime import datetime
+
+        def generate_daily_token(length=16):
+            today = datetime.now().strftime("%Y%m%d")
+            chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+            rand_part = ''.join(random.choices(chars, k=length))
+            return f"{today}-{rand_part}"
+
+        def shorten_yeumoney(url, api_token):
+            encoded_url = urllib.parse.quote(url, safe='')
+            api_url = f"https://yeumoney.com/QL_api.php?token={api_token}&format=text&url={encoded_url}"
+            try:
+                resp = requests.get(api_url, timeout=10).text.strip()
+                return resp if resp else None
+            except:
+                return None
+
+        YEUMONEY_API_TOKEN = "769323f441b8e15f97640d5d716bd50098b884b4328a599152cbcf1519af4b84"
+        INDEX_HTML_URL = "https://khanhnek5.github.io/NguyenVuKhanh/index.html"
+
+        token_today = generate_daily_token()
+        index_url = f"{INDEX_HTML_URL}?t={token_today}"
+
+        short_link = shorten_yeumoney(index_url, YEUMONEY_API_TOKEN)
+        if short_link:
+            with open("yeu_shortlink.txt", "w") as f: f.write(short_link)
+            with open("redirect.html", "w") as f:
+                f.write(f'<meta http-equiv="refresh" content="0; url={index_url}">')
+        else:
+            print("❌ Không tạo được link rút gọn hôm nay")
+
+    - name: Commit updated files
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add yeu_shortlink.txt redirect.html
+        git commit -m "Cập nhật token & link rút gọn hôm nay"
+        git push
