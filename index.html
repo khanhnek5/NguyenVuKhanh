@@ -1,43 +1,96 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>KhanhMG — Key Hôm Nay</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>KhanhMG — Key theo user</title>
 <style>
-  :root{--bg:#0f1720;--card:#0b1220;--accent:#16a085;--muted:#9aa9b2}
-  html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
-  body{display:flex;align-items:center;justify-content:center;background:
-    radial-gradient(1200px 600px at 10% 20%, rgba(28, 168, 173, .12), transparent),
-    linear-gradient(180deg,#071022 0%, #071622 100%);color:#eef3f5}
-  .box{width:min(720px,94%);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:28px;box-shadow:0 8px 30px rgba(2,6,23,.6);border:1px solid rgba(255,255,255,0.03)}
-  h1{margin:0;font-size:20px;letter-spacing:0.4px}
-  p.lead{margin:8px 0 18px;color:var(--muted);font-size:14px}
-  .key{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace; background:rgba(0,0,0,0.22);padding:14px 18px;border-radius:10px;display:inline-block;font-size:18px}
-  .meta{margin-top:12px;color:var(--muted);font-size:13px}
-  .row{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
-  button{cursor:pointer;border:0;padding:10px 14px;border-radius:8px;background:var(--accent);color:#052016;font-weight:600}
-  button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
-  .small{font-size:13px;color:var(--muted)}
-  footer{margin-top:18px;color:var(--muted);font-size:12px}
-  @media (max-width:420px){ .key{font-size:16px;padding:12px} }
+  body{font-family:Inter,system-ui,Arial;background:#071022;color:#eef3f5;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+  .card{width:min(720px,94%);background:rgba(255,255,255,0.02);padding:22px;border-radius:12px}
+  input,button{padding:10px;border-radius:8px;border:0}
+  input{width:300px}
+  .key{font-family:monospace;background:rgba(0,0,0,0.18);padding:8px 12px;border-radius:8px;display:inline-block}
+  .note{color:#9aa9b2;font-size:13px}
 </style>
 </head>
 <body>
-  <div class="box" role="main">
-    <h1>🔐 Mã kích hoạt hàng ngày — KhanhMG</h1>
-    <p class="lead">Mỗi ngày chỉ có 1 key hợp lệ. Key thay đổi lúc 00:00 theo giờ thiết bị.</p>
+  <div class="card">
+    <h2>🔐 Key hàng ngày theo user — KhanhMG</h2>
+    <p class="note">Nhập <strong>username</strong> (hoặc email/id). Key đổi mỗi 00:00 theo giờ thiết bị.</p>
 
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-      <div id="key" class="key">Đang tạo key…</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div class="row">
-          <button id="btnCopy">Sao chép</button>
-          <button id="btnRefresh" class="ghost">Tạo lại</button>
-        </div>
-        <div class="meta">Key mẫu: <code class="small">KhanhMG-&lt;10 ký tự (A-Za-z0-9)&gt;</code></div>
-      </div>
+    <div style="display:flex;gap:8px;align-items:center;margin:12px 0">
+      <input id="username" placeholder="Nhập username (ví dụ: khanh123)" />
+      <button id="btnGen">Tạo key</button>
+      <button id="btnCopy">Sao chép</button>
     </div>
 
-    <div class="small" style="margin-top:14px">
-      <div>Ngày (thiết bị): <span id="localDate">—
+    <div style="margin-top:8px">
+      <div>Key: <span id="key" class="key">—</span></div>
+      <div class="note" style="margin-top:8px">Mẫu: <code>KhanhMG-&lt;10 ký tự&gt;</code></div>
+    </div>
+
+    <hr style="margin:16px 0;opacity:.06" />
+    <div class="note">Chú ý: nếu bạn host trang này công khai và để <code>SALT</code> ở bên trong, thì người khác có thể sinh key. Muốn an toàn, dùng server (Flask) giữ <code>SALT</code> bí mật.</div>
+  </div>
+
+<script>
+/*
+ CLIENT-SIDE KEY ALGORITHM
+ - seed = SALT + username + YYYY-MM-DD
+ - hash = SHA-256(seed)
+ - lấy 10 ký tự từ hash giống thuật toán trước (cặp bytes)
+*/
+const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const PREFIX = "KhanhMG-";
+const KEY_LEN = 10;
+
+// >>> Thay giá trị SALT tại đây nếu muốn (nếu host công khai: SALT lộ)
+// Nếu muốn an toàn: đừng đặt SALT ở đây. Dùng server để trả key.
+const SALT = "CHANGE_THIS_TO_SOMETHING_SECRET";
+
+async function sha256Bytes(msg){
+  const enc = new TextEncoder();
+  const data = enc.encode(msg);
+  const h = await crypto.subtle.digest('SHA-256', data);
+  return new Uint8Array(h);
+}
+
+async function genKeyFor(username, dateObj){
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth()+1).padStart(2,'0');
+  const d = String(dateObj.getDate()).padStart(2,'0');
+  const seed = SALT + username + `${y}-${m}-${d}`;
+  const bytes = await sha256Bytes(seed);
+  let key = "";
+  for(let i=0;i<KEY_LEN;i++){
+    const b1 = bytes[i % bytes.length];
+    const b2 = bytes[(i + 11) % bytes.length];
+    const val = ((b1 << 8) | b2) >>> 0;
+    const idx = val % CHARSET.length;
+    key += CHARSET.charAt(idx);
+  }
+  return PREFIX + key;
+}
+
+document.getElementById('btnGen').addEventListener('click', async ()=>{
+  const user = (document.getElementById('username').value || "").trim();
+  if(!user){ alert("Nhập username đã."); return; }
+  document.getElementById('key').textContent = "Đang tạo...";
+  try{
+    const k = await genKeyFor(user, new Date());
+    document.getElementById('key').textContent = k;
+  }catch(e){
+    document.getElementById('key').textContent = "Lỗi";
+    console.error(e);
+  }
+});
+
+document.getElementById('btnCopy').addEventListener('click', async ()=>{
+  const txt = document.getElementById('key').textContent;
+  if(!txt || txt === "—") return;
+  try{ await navigator.clipboard.writeText(txt); alert("Đã sao chép: " + txt); }
+  catch(e){ alert("Không copy được, mở thủ công"); }
+});
+</script>
+</body>
+</html>
