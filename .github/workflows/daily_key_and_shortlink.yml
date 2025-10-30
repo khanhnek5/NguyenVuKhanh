@@ -1,10 +1,9 @@
 name: Daily Key + YeuMoney Shortlink
 
-# chạy hàng ngày (0:00 UTC) + cho phép trigger thủ công
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+    - cron: '0 0 * * *'  # chạy 0h00 UTC mỗi ngày
+  workflow_dispatch:     # cho phép chạy thủ công
 
 jobs:
   generate-and-short:
@@ -15,7 +14,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.x"
@@ -23,18 +22,19 @@ jobs:
       - name: Generate key, create shortlink, write files
         env:
           YEUMONEY_API_TOKEN: ${{ secrets.YEUMONEY_API_TOKEN }}
-          # chỉnh INDEX_URL nếu repo/pages khác
           INDEX_HTML_URL: "https://khanhnek5.github.io/NguyenVuKhanh/index.html"
+        run: python3 scripts/generate_key.py
+
+      - name: Commit & push generated files
         run: |
-          set -euo pipefail
-          python3 - <<'PY'
-import os, random, string, json, urllib.parse, requests, sys
-from datetime import datetime
-
-# Config from env
-API_TOKEN = os.environ.get("YEUMONEY_API_TOKEN")
-INDEX_HTML = os.environ.get("INDEX_HTML_URL").rstrip('/')
-
+          git config user.name "github-actions[bot]"
+          git config user.email "actions@github.com"
+          git add key_today.json yeu_shortlink.txt redirect.html || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-update daily key & YeuMoney shortlink [skip ci]"
+            git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
 if not API_TOKEN:
     print("ERROR: YEUMONEY_API_TOKEN missing")
     sys.exit(2)
