@@ -10,25 +10,31 @@ body { font-family: Arial, sans-serif; background: #121212; color: #fff; display
 h1 { color: #ffd700; }
 .key-box { margin: 20px 0; padding: 15px; background: #333; border-radius: 8px; font-size: 1.5em; word-break: break-all; user-select: all; cursor: pointer; }
 .logo { width: 120px; margin-bottom: 20px; }
+.countdown { margin-top: 15px; font-size: 1em; color: #aaa; }
 </style>
 </head>
 <body>
 <div class="container">
 <img class="logo" src="https://sf-static.upanhlaylink.com/img/image_2025103134746677a16d9e7c9ddd1cbb6ae1c575.jpg" alt="Logo">
 <h1>Key Free Hôm Nay</h1>
-<div class="key-box" id="key">Key chưa sẵn sàng, vượt link YeuMoney để nhận key</div>
+<div class="key-box" id="key">Key hôm nay chưa sẵn sàng</div>
+<div class="countdown" id="countdown"></div>
 </div>
 
 <script>
-// Link chứa key hôm nay đã được tạo tự động
 const keyUrl = "https://raw.githubusercontent.com/khanhnek5/NguyenVuKhanh/main/key_today.json";
+const shortlinkUrl = "https://raw.githubusercontent.com/khanhnek5/NguyenVuKhanh/main/yeu_shortlink.txt";
 
-// Hàm kiểm tra token YeuMoney bằng cách fetch link rút gọn
-async function checkTokenAndShowKey(userShortlink) {
+// Kiểm tra token YeuMoney tự động
+async function checkTokenAndShowKey() {
     try {
-        const res = await fetch(userShortlink, { method: 'GET', redirect: 'manual' });
-        if(res.status === 302 || res.status === 200){
-            // Token hợp lệ, hiển thị key
+        const shortlinkRes = await fetch(shortlinkUrl);
+        const shortlink = (await shortlinkRes.text()).trim();
+        if(!shortlink) throw "Shortlink chưa tạo";
+
+        const tokenCheck = await fetch(shortlink, { method: 'GET', redirect: 'manual' });
+        if(tokenCheck.status === 302 || tokenCheck.status === 200){
+            // Token hợp lệ, show key
             const keyRes = await fetch(keyUrl);
             const keyData = await keyRes.json();
             document.getElementById('key').innerText = keyData.key;
@@ -41,9 +47,21 @@ async function checkTokenAndShowKey(userShortlink) {
     }
 }
 
-// Yêu cầu người dùng nhập link YeuMoney đã vượt
-const userInput = prompt("Dán link YeuMoney bạn vừa vượt:");
-if(userInput) checkTokenAndShowKey(userInput);
+// Countdown đến 0h00 hôm sau
+function updateCountdown() {
+    const now = new Date();
+    const next = new Date();
+    next.setHours(24,0,0,0);
+    const diff = next - now;
+    const h = Math.floor(diff/1000/3600);
+    const m = Math.floor((diff/1000%3600)/60);
+    const s = Math.floor(diff/1000%60);
+    document.getElementById("countdown").innerText = `Đếm ngược đến key tiếp theo: ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+}
+
+checkTokenAndShowKey();
+updateCountdown();
+setInterval(updateCountdown, 1000);
 </script>
 </body>
 </html>
