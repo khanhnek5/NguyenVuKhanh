@@ -7,6 +7,7 @@
 <style>
   body{font-family:Inter,system-ui,Arial;background:#071022;color:#eef3f5;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
   .card{width:min(720px,94%);background:rgba(255,255,255,0.02);padding:22px;border-radius:12px;text-align:center}
+  img.logo{width:120px;margin-bottom:12px;border-radius:12px}
   .key{display:inline-block;padding:12px 16px;border-radius:10px;background:rgba(0,0,0,0.2);font-family:monospace;font-size:22px;margin-top:12px}
   button{padding:10px 14px;border-radius:8px;border:0;background:#16a085;color:#052016;font-weight:700;cursor:pointer;margin-top:12px}
   .note{margin-top:8px;color:#9aa9b2;font-size:13px}
@@ -14,19 +15,20 @@
 </head>
 <body>
 <div class="card">
+  <!-- Logo -->
+  <img class="logo" src="https://sf-static.upanhlaylink.com/img/image_2025103134746677a16d9e7c9ddd1cbb6ae1c575.jpg" alt="Logo">
+
   <h2>🔐 Key hàng ngày — KhanhMG</h2>
   <div class="key" id="key">—</div>
   <button id="btnCopy">Sao chép</button>
-  <div class="note">Key đổi mỗi 00:00 theo thời gian thực.</div>
+  <div class="note">Key đổi mỗi 00:00 theo giờ thiết bị. Mẫu: <code>KhanhMG-&lt;10 ký tự A-Z,a-z,0-9&gt;</code></div>
 </div>
 
 <script>
 const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 const PREFIX = "KhanhMG-";
 const KEY_LEN = 10;
-
-// SALT public, ai cũng dùng
-const SALT = "";
+const SALT = ""; // Public, ai cũng lấy key được
 
 async function sha256Bytes(msg) {
   const enc = new TextEncoder();
