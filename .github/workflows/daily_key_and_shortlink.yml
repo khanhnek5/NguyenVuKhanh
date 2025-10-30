@@ -1,39 +1,57 @@
-name: Daily Key + YeuMoney Shortlink
+name: Daily Key & Shortlink
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # chạy 0h00 UTC mỗi ngày
-  workflow_dispatch:     # cho phép chạy thủ công
+    - cron: "0 0 * * *" # chạy lúc 0h00 UTC hàng ngày
+  workflow_dispatch:
 
 jobs:
-  generate-and-short:
+  generate_key:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.x"
+          python-version: '3.x'
 
-      - name: Generate key, create shortlink, write files
-        env:
-          YEUMONEY_API_TOKEN: ${{ secrets.YEUMONEY_API_TOKEN }}
-          INDEX_HTML_URL: "https://khanhnek5.github.io/NguyenVuKhanh/index.html"
+      - name: Generate key & shortlink
         run: |
-          python3 scripts/generate_key.py
+          import requests, random, string, json
 
-      - name: Commit & push generated files
+          # --- Sinh key free ---
+          random_suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+          key = f"KhanhMG-{random_suffix}"
+
+          # --- Ghi key vào JSON ---
+          key_data = {"key": key}
+          with open("key_today.json", "w") as f:
+              json.dump(key_data, f)
+
+          # --- Tạo link gốc (có thể link tới index.html hiển thị key) ---
+          link_goc = "https://khanhnek5.github.io/NguyenVuKhanh/index.html"
+          api_token = "769323f441b8e15f97640d5d716bd50098b884b4328a599152cbcf1519af4b84"
+
+          api_url = f"https://yeumoney.com/QL_api.php?token={api_token}&url={link_goc}&format=text"
+          try:
+              r = requests.get(api_url, timeout=10)
+              shortlink = r.text.strip() if r.text else ""
+          except:
+              shortlink = ""
+
+          # --- Ghi link rút gọn ---
+          with open("yeu_shortlink.txt", "w") as f:
+              f.write(shortlink)
+
+          print(f"Key free hôm nay: {key}")
+          print(f"Shortlink YeuMoney: {shortlink}")
+
+      - name: Commit key & shortlink
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "actions@github.com"
-          git add key_today.json yeu_shortlink.txt redirect.html || true
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Auto-update daily key & YeuMoney shortlink [skip ci]"
-            git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add key_today.json yeu_shortlink.txt
+          git commit -m "Update daily free key and YeuMoney shortlink [skip ci]" || echo "No changes to commit"
+          git push
