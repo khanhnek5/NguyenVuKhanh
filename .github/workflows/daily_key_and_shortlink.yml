@@ -1,32 +1,77 @@
-name: Generate daily key and YeuMoney shortlink
+name: Daily Key & Shortlink (debug)
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "0 0 * * *"
-  workflow_dispatch:
 
 jobs:
-  generate_key:
+  generate_key_debug:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.x"
 
-      - name: Run generator
-        run: python generate.py
+      - name: Install requests
+        run: pip install --quiet requests
+
+      - name: Show env (for debug)
+        run: |
+          echo "---- ENV CHECK ----"
+          echo "YEUMONEY_API_TOKEN set? -> ${YEUMONEY_API_TOKEN:+YES}${YEUMONEY_API_TOKEN:0:0}"
+          echo "INDEX_HTML_URL -> ${INDEX_HTML_URL}"
+          echo "---- ls repo ----"
+          ls -la
         env:
           YEUMONEY_API_TOKEN: ${{ secrets.YEUMONEY_API_TOKEN }}
           INDEX_HTML_URL: "https://khanhnek5.github.io/NguyenVuKhanh/index.html"
 
-      - name: Commit results
+      - name: Show generate.py (if exists)
+        run: |
+          echo "---- cat generate.py (start) ----"
+          if [ -f generate.py ]; then cat generate.py; else echo "generate.py NOT FOUND"; fi
+          echo "---- cat generate.py (end) ----"
+
+      - name: Run generator (capture exit code and logs)
+        run: |
+          echo "---- Running generate.py ----"
+          python -u generate.py
+          RC=$?
+          echo "---- generate.py exit code: $RC ----"
+          # keep going even if non-zero so we can inspect files
+        env:
+          YEUMONEY_API_TOKEN: ${{ secrets.YEUMONEY_API_TOKEN }}
+          INDEX_HTML_URL: "https://khanhnek5.github.io/NguyenVuKhanh/index.html"
+        continue-on-error: true
+
+      - name: Show generated files
+        run: |
+          echo "---- ls after run ----"
+          ls -la || true
+          echo
+          echo "---- key.json ----"
+          if [ -f key.json ]; then cat key.json || true; else echo "key.json NOT FOUND"; fi
+          echo
+          echo "---- shortlink.json ----"
+          if [ -f shortlink.json ]; then cat shortlink.json || true; else echo "shortlink.json NOT FOUND"; fi
+          echo
+          echo "---- redirect.html ----"
+          if [ -f redirect.html ]; then sed -n '1,200p' redirect.html || true; else echo "redirect.html NOT FOUND"; fi
+        continue-on-error: true
+
+      - name: Commit outputs (if any) - optional
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add key.json shortlink.json redirect.html
-          git commit -m "Auto-update daily key and shortlink" || echo "No changes"
-          git push
+          git add key.json shortlink.json redirect.html || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-update daily key (debug) [ci skip]" || true
+            git push || echo "git push failed"
+          fi
