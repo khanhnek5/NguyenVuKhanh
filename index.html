@@ -4,25 +4,46 @@
 <meta charset="UTF-8">
 <title>Key Tool Hôm Nay</title>
 <style>
-body{font-family:sans-serif;background:#111;color:#eee;text-align:center;padding:50px;}
-.logo{max-width:400px;height:auto;margin-bottom:20px;}
-.banner-line{opacity:0;transition:opacity 0.5s;}
-.key-box{background:#222;padding:20px;border-radius:10px;display:inline-block;margin-top:20px;}
-.copy-btn{margin-top:10px;padding:10px 20px;background:#4caf50;border:none;color:#fff;cursor:pointer;border-radius:5px;}
+body {
+    font-family: sans-serif;
+    background: #111;
+    color: #eee;
+    text-align: center;
+    padding: 50px;
+}
+.logo-img {
+    max-width: 90%;
+    height: auto;
+    margin-bottom: 20px;
+    border-radius: 10px;
+}
+.banner-line { opacity: 0; transition: opacity 0.5s; }
+.key-box {
+    background: #222;
+    padding: 20px;
+    border-radius: 10px;
+    display: inline-block;
+    margin-top: 20px;
+}
+.copy-btn {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: #4caf50;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 5px;
+}
 </style>
 </head>
 <body>
-<!-- Logo cũ, to vừa khung -->
-<img src="https://sf-static.upanhlaylink.com/img/image_2025103134746677a16d9e7c9ddd1cbb6ae1c575.jpg" class="logo">
+
+<!-- Logo ảnh cũ, to vừa khung -->
+<img src="https://sf-static.upanhlaylink.com/img/image_2025103134746677a16d9e7c9ddd1cbb6ae1c575.jpg" class="logo-img">
 
 <div id="banner">
-  <div class="banner-line">  _____ _   _  ___  _   _  ____ _____  _    ____ ____    _    ___  </div>
-  <div class="banner-line"> |_   _| | | |/ _ \| \ | |/ ___|_   _|/ \  / ___|  _ \  / \  / _ \ </div>
-  <div class="banner-line">   | | | | | | | | |  \| | |  _  | | / _ \| |   | | | |/ _ \| | | |</div>
-  <div class="banner-line">   | | | |_| | |_| | |\  | |_| | | |/ ___ \ |___| |_| / ___ \ |_| |</div>
-  <div class="banner-line">   |_|  \___/ \___/|_| \_|\\____| |_/_/   \_\____|____/_/   \_\___/ </div>
-  <div class="banner-line">                      ⚡ TOOL AUTO CMT & REACT FACEBOOK ⚡</div>
-  <div class="banner-line">                          © Bản quyền thuộc về Nguyễn Vũ Khanh</div>
+  <div class="banner-line">⚡ TOOL AUTO CMT & REACT FACEBOOK ⚡</div>
+  <div class="banner-line">© Bản quyền thuộc về Nguyễn Vũ Khanh</div>
 </div>
 
 <div class="key-box" id="keyBox">Đang tải key...</div><br>
@@ -32,31 +53,32 @@ body{font-family:sans-serif;background:#111;color:#eee;text-align:center;padding
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 
 async function animateBanner(){
-  const lines = document.querySelectorAll('.banner-line');
-  for(let i=0;i<lines.length;i++){
-    lines[i].style.opacity = 1;
-    await sleep(80);
-  }
+    const lines = document.querySelectorAll('.banner-line');
+    for(let i=0;i<lines.length;i++){
+        lines[i].style.opacity = 1;
+        await sleep(80);
+    }
 }
 
 async function fetchKey(){
-  try{
-    const res = await fetch('key.json?timestamp='+Date.now());
-    const data = await res.json();
-    document.getElementById('keyBox').innerText = data.key;
-  }catch(e){
-    document.getElementById('keyBox').innerText = 'Key hôm nay chưa sẵn sàng, vui lòng thử lại sau.';
-  }
+    try{
+        const res = await fetch('key.json?timestamp='+Date.now());
+        const data = await res.json();
+        document.getElementById('keyBox').innerText = data.key;
+    }catch(e){
+        document.getElementById('keyBox').innerText = 'Key hôm nay chưa sẵn sàng, vui lòng thử lại sau.';
+    }
 }
 
 function copyKey(){
-  const text = document.getElementById('keyBox').innerText;
-  navigator.clipboard.writeText(text);
-  alert('Đã copy key: '+text);
+    const text = document.getElementById('keyBox').innerText;
+    navigator.clipboard.writeText(text);
+    alert('Đã copy key: '+text);
 }
 
 animateBanner();
 fetchKey();
 </script>
+
 </body>
 </html>
