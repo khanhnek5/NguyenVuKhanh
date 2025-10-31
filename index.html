@@ -35,6 +35,11 @@ body {
     cursor: pointer;
     border-radius: 5px;
 }
+.countdown {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #aaa;
+}
 </style>
 </head>
 <body>
@@ -46,7 +51,8 @@ body {
   <div class="banner-line">© Bản quyền thuộc về Nguyễn Vũ Khanh</div>
 </div>
 
-<div class="key-box" id="keyBox">Đang kiểm tra token và tải key...</div><br>
+<div class="key-box" id="keyBox">Đang kiểm tra token và tải key...</div>
+<div class="countdown" id="countdownTimer"></div>
 <button class="copy-btn" onclick="copyKey()">Copy Key</button>
 
 <script>
@@ -71,7 +77,6 @@ async function fetchKey(){
     }
 }
 
-// Check token YeuMoney tự động
 async function checkTokenAndShowKey(){
     const apiToken = '769323f441b8e15f97640d5d716bd50098b884b4328a599152cbcf1519af4b84';
     const currentUrl = encodeURIComponent(location.href);
@@ -84,6 +89,7 @@ async function checkTokenAndShowKey(){
             const key = await fetchKey();
             if(key){
                 document.getElementById('keyBox').innerText = key;
+                startCountdown();
             } else {
                 document.getElementById('keyBox').innerText = 'Key hôm nay chưa sẵn sàng, vui lòng thử lại sau.';
             }
@@ -99,6 +105,27 @@ function copyKey(){
     const text = document.getElementById('keyBox').innerText;
     navigator.clipboard.writeText(text);
     alert('Đã copy key: '+text);
+}
+
+// Đếm ngược đến 0h00 hôm sau
+function startCountdown(){
+    const countdownEl = document.getElementById('countdownTimer');
+    function updateCountdown(){
+        const now = new Date();
+        const tomorrow = new Date();
+        tomorrow.setHours(24,0,0,0);
+        const diff = tomorrow - now;
+        if(diff <= 0){
+            countdownEl.innerText = "Key đã hết hạn, tải lại trang để cập nhật key mới.";
+            return;
+        }
+        const h = Math.floor(diff/1000/3600);
+        const m = Math.floor(diff/1000/60)%60;
+        const s = Math.floor(diff/1000)%60;
+        countdownEl.innerText = `Hết hạn trong: ${h} giờ ${m} phút ${s} giây`;
+    }
+    updateCountdown();
+    setInterval(updateCountdown,1000);
 }
 
 animateBanner();
