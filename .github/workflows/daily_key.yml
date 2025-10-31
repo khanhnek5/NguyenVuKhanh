@@ -1,0 +1,40 @@
+name: Daily Key & Shortlink
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 0h00 mỗi ngày
+  workflow_dispatch:
+
+jobs:
+  generate_key:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Cài Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      # 3️⃣ Cài requests nếu chưa có
+      - name: Install dependencies
+        run: pip install requests
+
+      # 4️⃣ Chạy generate.py để sinh key + rút gọn link
+      - name: Generate key and shortlink
+        env:
+          YEUMONEY_API_TOKEN: ${{ secrets.YEUMONEY_API_TOKEN }}
+          INDEX_HTML_URL: https://khanhnek5.github.io/NguyenVuKhanh/index.html
+        run: python generate.py
+
+      # 5️⃣ Commit các file mới tạo
+      - name: Commit key files
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add key_today.json yeu_shortlink.txt redirect.html
+          git commit -m "Update daily key and shortlink" || echo "No changes to commit"
+          git push

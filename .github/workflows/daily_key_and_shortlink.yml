@@ -1,2 +1,0 @@
-- name: Generate daily key and YeuMoney shortlink
-  run: python generate.py
