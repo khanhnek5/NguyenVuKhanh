@@ -4,10 +4,41 @@
 <meta charset="UTF-8">
 <title>Key Free Hôm Nay</title>
 <style>
-  body { font-family: Arial, sans-serif; background:#f0f0f0; display:flex; justify-content:center; align-items:center; height:100vh; }
-  .container { background:#fff; padding:30px; border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.2); text-align:center; width:400px; }
-  img { max-width:100%; height:auto; margin-bottom:20px; }
-  button { padding:10px 20px; margin-top:10px; cursor:pointer; border:none; background:#28a745; color:#fff; border-radius:5px; font-size:16px; }
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 400px;
+  }
+  img {
+    max-width: 200px;
+    height: auto;
+    margin-bottom: 20px;
+  }
+  button {
+    padding: 10px 20px;
+    margin-top: 10px;
+    cursor: pointer;
+    border: none;
+    background: #28a745;
+    color: #fff;
+    border-radius: 5px;
+    font-size: 16px;
+  }
+  #countdown {
+    margin-top: 10px;
+    color: #555;
+  }
 </style>
 </head>
 <body>
@@ -22,32 +53,27 @@
 <script>
 async function loadKey() {
   try {
-    // --- Check YeuMoney token trước ---
-    let tokenValid = false;
-    // Thêm code xác thực token YeuMoney nếu cần
-    tokenValid = true; // tạm đặt true cho demo
-    
-    if(!tokenValid){
-      document.getElementById('key').innerText = "Vui lòng vượt link YeuMoney để lấy key";
-      return;
-    }
-
     // --- Fetch key từ GitHub Pages ---
-    const res = await fetch('https://khanhnek5.github.io/NguyenVuKhanh/key.json?ts=' + Date.now());
+    const res = await fetch('key_today.json?ts=' + Date.now());
+    if(!res.ok) throw new Error("Key chưa sẵn sàng");
     const data = await res.json();
     const key = data.key;
     document.getElementById('key').innerText = key;
 
-    // --- Hiển thị countdown hết hạn key (đếm tới 0h hôm sau) ---
+    // --- Hiển thị countdown hết hạn key (0h hôm sau) ---
     const now = new Date();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1);
     function updateCountdown(){
       const diff = tomorrow - new Date();
+      if(diff <= 0){
+        document.getElementById('countdown').innerText = "Key đã hết hạn";
+        return;
+      }
       const h = Math.floor(diff/1000/3600);
       const m = Math.floor(diff/1000/60)%60;
       const s = Math.floor(diff/1000)%60;
       document.getElementById('countdown').innerText = `Hết hạn trong ${h}h ${m}m ${s}s`;
-      if(diff>0) setTimeout(updateCountdown,1000);
+      setTimeout(updateCountdown,1000);
     }
     updateCountdown();
 
@@ -57,7 +83,7 @@ async function loadKey() {
 }
 
 // --- Copy key ---
-document.getElementById('copyBtn').addEventListener('click',()=>{
+document.getElementById('copyBtn').addEventListener('click', ()=>{
   const key = document.getElementById('key').innerText;
   navigator.clipboard.writeText(key);
   alert("Đã copy key!");
