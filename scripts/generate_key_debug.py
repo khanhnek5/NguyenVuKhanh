@@ -12,15 +12,18 @@ print(f"[DEBUG] YEUMONEY_API_TOKEN: {'SET' if api_token else 'MISSING'}")
 print(f"[DEBUG] INDEX_HTML_URL: {index_url or '(missing)'}")
 
 today = datetime.now().strftime("%Y-%m-%d")
-key = f"K-{today.replace('-', '')}"
+key = f"K-{today.replace('-', '')}"  # Ví dụ: K-20251031
 
-# Ghi file key.json
+# Ghi file key.json (và copy to key_today.json cho index.html)
 try:
+    data = {"date": today, "key": key}
     with open("key.json", "w", encoding="utf-8") as f:
-        json.dump({"date": today, "key": key}, f, ensure_ascii=False, indent=2)
-    print("[OK] key.json created.")
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    with open("key_today.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    print("[OK] key.json & key_today.json created.")
 except Exception as e:
-    print("[ERR] Cannot write key.json:", e)
+    print("[ERR] Cannot write key files:", e)
 
 # Gọi API YeuMoney
 shortlink = None
@@ -52,20 +55,25 @@ try:
 except Exception as e:
     print("[ERR] Cannot write shortlink.json:", e)
 
+# Append to yeu_shortlink.txt (log history)
+try:
+    with open("yeu_shortlink.txt", "a", encoding="utf-8") as f:
+        f.write(f"{today}: {shortlink or 'N/A'}\n")
+    print("[OK] Appended to yeu_shortlink.txt.")
+except Exception as e:
+    print("[WARN] Cannot append to yeu_shortlink.txt:", e)
+
 # Ghi redirect.html
 try:
+    redirect_to = shortlink or index_url or '#'
     html = f"""<html>
-<head><meta http-equiv="refresh" content="0;url={shortlink or '#'}"></head>
+<head><meta http-equiv="refresh" content="0;url={redirect_to}"></head>
 <body><p>Redirecting to YeuMoney...</p></body>
 </html>"""
     with open("redirect.html", "w", encoding="utf-8") as f:
         f.write(html)
-    print("[OK] redirect.html created.")
+    print(f"[OK] redirect.html created (redirects to: {redirect_to})")
 except Exception as e:
     print("[ERR] Cannot write redirect.html:", e)
 
-print("=== END generate.py ===")with open("redirect.html", "w", encoding="utf-8") as f:
-    f.write(redirect_html)
-print("📄 Tạo redirect.html xong.")
-
-print("🎯 HOÀN TẤT: key + shortlink đã cập nhật, không có lỗi nghiêm trọng.")
+print("=== END generate.py ===")
