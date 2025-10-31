@@ -2,66 +2,61 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Key Free Hôm Nay</title>
+<title>Key Tool Hôm Nay</title>
 <style>
-body { font-family: Arial, sans-serif; background: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin:0; }
-.container { text-align: center; background: #1f1f1f; padding: 30px; border-radius: 12px; box-shadow: 0 0 15px #000; }
-h1 { color: #ffd700; }
-.key-box { margin: 20px 0; padding: 15px; background: #333; border-radius: 8px; font-size: 1.5em; word-break: break-all; user-select: all; cursor: pointer; }
-.logo { width: 120px; margin-bottom: 20px; }
-.countdown { margin-top: 15px; font-size: 1em; color: #aaa; }
+body{font-family:sans-serif;background:#111;color:#eee;text-align:center;padding:50px;}
+.logo{max-width:250px;margin-bottom:20px;}
+.banner-line{opacity:0;transition:opacity 0.5s;}
+.key-box{background:#222;padding:20px;border-radius:10px;display:inline-block;margin-top:20px;}
+.copy-btn{margin-top:10px;padding:10px 20px;background:#4caf50;border:none;color:#fff;cursor:pointer;border-radius:5px;}
 </style>
 </head>
 <body>
-<div class="container">
-<img class="logo" src="https://sf-static.upanhlaylink.com/img/image_2025103134746677a16d9e7c9ddd1cbb6ae1c575.jpg" alt="Logo">
-<h1>Key Free Hôm Nay</h1>
-<div class="key-box" id="key">Key hôm nay chưa sẵn sàng</div>
-<div class="countdown" id="countdown"></div>
+<!-- Logo cũ -->
+<img src="https://sf-static.upanhlaylink.com/img/image_2025103134746677a16d9e7c9ddd1cbb6ae1c575.jpg" class="logo">
+
+<div id="banner">
+  <div class="banner-line">  _____ _   _  ___  _   _  ____ _____  _    ____ ____    _    ___  </div>
+  <div class="banner-line"> |_   _| | | |/ _ \| \ | |/ ___|_   _|/ \  / ___|  _ \  / \  / _ \ </div>
+  <div class="banner-line">   | | | | | | | | |  \| | |  _  | | / _ \| |   | | | |/ _ \| | | |</div>
+  <div class="banner-line">   | | | |_| | |_| | |\  | |_| | | |/ ___ \ |___| |_| / ___ \ |_| |</div>
+  <div class="banner-line">   |_|  \___/ \___/|_| \_|\\____| |_/_/   \_\____|____/_/   \_\___/ </div>
+  <div class="banner-line">                      ⚡ TOOL AUTO CMT & REACT FACEBOOK ⚡</div>
+  <div class="banner-line">                          © Bản quyền thuộc về Nguyễn Vũ Khanh</div>
 </div>
 
+<div class="key-box" id="keyBox">Đang tải key...</div><br>
+<button class="copy-btn" onclick="copyKey()">Copy Key</button>
+
 <script>
-const keyUrl = "https://raw.githubusercontent.com/khanhnek5/NguyenVuKhanh/main/key_today.json";
-const shortlinkUrl = "https://raw.githubusercontent.com/khanhnek5/NguyenVuKhanh/main/yeu_shortlink.txt";
+function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 
-// Kiểm tra token YeuMoney tự động
-async function checkTokenAndShowKey() {
-    try {
-        const shortlinkRes = await fetch(shortlinkUrl);
-        const shortlink = (await shortlinkRes.text()).trim();
-        if(!shortlink) throw "Shortlink chưa tạo";
-
-        const tokenCheck = await fetch(shortlink, { method: 'GET', redirect: 'manual' });
-        if(tokenCheck.status === 302 || tokenCheck.status === 200){
-            // Token hợp lệ, show key
-            const keyRes = await fetch(keyUrl);
-            const keyData = await keyRes.json();
-            document.getElementById('key').innerText = keyData.key;
-        } else {
-            document.getElementById('key').innerText = "Bạn phải vượt link YeuMoney để nhận key";
-        }
-    } catch(e){
-        document.getElementById('key').innerText = "Bạn phải vượt link YeuMoney để nhận key";
-        console.error(e);
-    }
+async function animateBanner(){
+  const lines = document.querySelectorAll('.banner-line');
+  for(let i=0;i<lines.length;i++){
+    lines[i].style.opacity = 1;
+    await sleep(80);
+  }
 }
 
-// Countdown đến 0h00 hôm sau
-function updateCountdown() {
-    const now = new Date();
-    const next = new Date();
-    next.setHours(24,0,0,0);
-    const diff = next - now;
-    const h = Math.floor(diff/1000/3600);
-    const m = Math.floor((diff/1000%3600)/60);
-    const s = Math.floor(diff/1000%60);
-    document.getElementById("countdown").innerText = `Đếm ngược đến key tiếp theo: ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+async function fetchKey(){
+  try{
+    const res = await fetch('key.json?timestamp='+Date.now());
+    const data = await res.json();
+    document.getElementById('keyBox').innerText = data.key;
+  }catch(e){
+    document.getElementById('keyBox').innerText = 'Key hôm nay chưa sẵn sàng, vui lòng thử lại sau.';
+  }
 }
 
-checkTokenAndShowKey();
-updateCountdown();
-setInterval(updateCountdown, 1000);
+function copyKey(){
+  const text = document.getElementById('keyBox').innerText;
+  navigator.clipboard.writeText(text);
+  alert('Đã copy key: '+text);
+}
+
+animateBanner();
+fetchKey();
 </script>
 </body>
 </html>
