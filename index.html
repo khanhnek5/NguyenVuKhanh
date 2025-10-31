@@ -4,42 +4,12 @@
 <meta charset="UTF-8">
 <title>Key Tool Hôm Nay</title>
 <style>
-body {
-    font-family: sans-serif;
-    background: #111;
-    color: #eee;
-    text-align: center;
-    padding: 50px;
-}
-.logo-img {
-    max-width: 90%;
-    height: auto;
-    margin-bottom: 20px;
-    border-radius: 10px;
-}
-.banner-line { opacity: 0; transition: opacity 0.5s; }
-.key-box {
-    background: #222;
-    padding: 20px;
-    border-radius: 10px;
-    display: inline-block;
-    margin-top: 20px;
-    min-width: 300px;
-}
-.copy-btn {
-    margin-top: 10px;
-    padding: 10px 20px;
-    background: #4caf50;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    border-radius: 5px;
-}
-.countdown {
-    margin-top: 10px;
-    font-size: 14px;
-    color: #aaa;
-}
+body { font-family:sans-serif; background:#111; color:#eee; text-align:center; padding:50px; }
+.logo-img { max-width:90%; height:auto; margin-bottom:20px; border-radius:10px; }
+.banner-line { opacity:0; transition:opacity 0.5s; }
+.key-box { background:#222; padding:20px; border-radius:10px; display:inline-block; margin-top:20px; min-width:300px; }
+.copy-btn { margin-top:10px; padding:10px 20px; background:#4caf50; border:none; color:#fff; cursor:pointer; border-radius:5px; }
+.countdown { margin-top:10px; font-size:14px; color:#aaa; }
 </style>
 </head>
 <body>
@@ -51,85 +21,68 @@ body {
   <div class="banner-line">© Bản quyền thuộc về Nguyễn Vũ Khanh</div>
 </div>
 
-<div class="key-box" id="keyBox">Đang kiểm tra token và tải key...</div>
+<div class="key-box" id="keyBox">Đang tải key...</div>
 <div class="countdown" id="countdownTimer"></div>
 <button class="copy-btn" onclick="copyKey()">Copy Key</button>
 
 <script>
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
-
 async function animateBanner(){
-    const lines = document.querySelectorAll('.banner-line');
-    for(let i=0;i<lines.length;i++){
-        lines[i].style.opacity = 1;
-        await sleep(80);
-    }
+    const lines=document.querySelectorAll('.banner-line');
+    for(let i=0;i<lines.length;i++){lines[i].style.opacity=1; await sleep(80);}
 }
 
 async function fetchKey(){
-    const keyJsonUrl = 'key.json?timestamp=' + Date.now();
-    try{
-        const res = await fetch(keyJsonUrl);
-        const data = await res.json();
+    const keyJsonUrl='key.json?ts='+Date.now(); // bypass cache
+    try{ 
+        const res=await fetch(keyJsonUrl); 
+        const data=await res.json(); 
         return data.key;
-    }catch(e){
-        return null;
-    }
+    }catch(e){ return null; }
 }
 
 async function checkTokenAndShowKey(){
-    const apiToken = '769323f441b8e15f97640d5d716bd50098b884b4328a599152cbcf1519af4b84';
-    const currentUrl = encodeURIComponent(location.href);
-    const yeuUrl = `https://yeumoney.com/QL_api.php?token=${apiToken}&format=json&url=${currentUrl}`;
-    
+    const apiToken='769323f441b8e15f97640d5d716bd50098b884b4328a599152cbcf1519af4b84';
+    const currentUrl=encodeURIComponent(location.href);
+    const yeuUrl=`https://yeumoney.com/QL_api.php?token=${apiToken}&format=json&url=${currentUrl}`;
     try{
-        const res = await fetch(yeuUrl);
-        const data = await res.json();
-        if(data.status === 'success' && data.shortenedUrl){
-            const key = await fetchKey();
+        const res=await fetch(yeuUrl);
+        const data=await res.json();
+        if(data.status==='success' && data.shortenedUrl){
+            const key=await fetchKey();
             if(key){
-                document.getElementById('keyBox').innerText = key;
+                document.getElementById('keyBox').innerText=key;
                 startCountdown();
             } else {
-                document.getElementById('keyBox').innerText = 'Key hôm nay chưa sẵn sàng, vui lòng thử lại sau.';
+                document.getElementById('keyBox').innerText='Key hôm nay chưa sẵn sàng, vui lòng thử lại sau.';
             }
-        } else {
-            document.getElementById('keyBox').innerText = 'Vui lòng vượt link YeuMoney để lấy key hôm nay.';
+        } else{
+            document.getElementById('keyBox').innerText='Vui lòng vượt link YeuMoney để lấy key hôm nay.';
         }
-    }catch(e){
-        document.getElementById('keyBox').innerText = 'Lỗi kiểm tra token, thử lại sau.';
+    }catch(e){ 
+        document.getElementById('keyBox').innerText='Lỗi kiểm tra token, thử lại sau.'; 
     }
 }
 
 function copyKey(){
-    const text = document.getElementById('keyBox').innerText;
+    const text=document.getElementById('keyBox').innerText;
     navigator.clipboard.writeText(text);
     alert('Đã copy key: '+text);
 }
 
-// Đếm ngược đến 0h00 hôm sau
 function startCountdown(){
-    const countdownEl = document.getElementById('countdownTimer');
+    const countdownEl=document.getElementById('countdownTimer');
     function updateCountdown(){
-        const now = new Date();
-        const tomorrow = new Date();
-        tomorrow.setHours(24,0,0,0);
-        const diff = tomorrow - now;
-        if(diff <= 0){
-            countdownEl.innerText = "Key đã hết hạn, tải lại trang để cập nhật key mới.";
-            return;
-        }
-        const h = Math.floor(diff/1000/3600);
-        const m = Math.floor(diff/1000/60)%60;
-        const s = Math.floor(diff/1000)%60;
-        countdownEl.innerText = `Hết hạn trong: ${h} giờ ${m} phút ${s} giây`;
+        const now=new Date(); const tomorrow=new Date(); tomorrow.setHours(24,0,0,0);
+        const diff=tomorrow-now;
+        if(diff<=0){ countdownEl.innerText="Key đã hết hạn, tải lại trang để cập nhật key mới."; return;}
+        const h=Math.floor(diff/1000/3600); const m=Math.floor(diff/1000/60)%60; const s=Math.floor(diff/1000)%60;
+        countdownEl.innerText=`Hết hạn trong: ${h} giờ ${m} phút ${s} giây`;
     }
-    updateCountdown();
-    setInterval(updateCountdown,1000);
+    updateCountdown(); setInterval(updateCountdown,1000);
 }
 
-animateBanner();
-checkTokenAndShowKey();
+animateBanner(); checkTokenAndShowKey();
 </script>
 
 </body>
