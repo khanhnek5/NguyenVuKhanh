@@ -1,39 +1,36 @@
-name: Daily Key & YeuMoney Shortlink
+name: Daily Key Generation
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 00:00 UTC mỗi ngày
+    - cron: '0 0 * * *'  # Mỗi ngày 0h00
   workflow_dispatch:
 
 jobs:
-  generate-and-short:
+  generate-key:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+      - name: Generate daily key
+        run: |
+          CHARSET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+          KEY="KhanhMG-$(cat /dev/urandom | tr -dc $CHARSET | head -c 12)"
+          echo "{\"key\":\"$KEY\"}" > key.json
+          echo "Generated key: $KEY"
 
-      - name: Run generate_key script
+      - name: Shorten key link via YeuMoney
         env:
-          YEUMONEY_API_TOKEN: ${{ secrets.YEUMONEY_API_TOKEN }}
-          INDEX_HTML_URL: "https://khanhnek5.github.io/NguyenVuKhanh/index.html"
+          YEUMONEY_TOKEN: ${{ secrets.YEUMONEY_TOKEN }}
         run: |
-          python3 scripts/generate_key.py
+          URL="https://khanhnek5.github.io/repo-name/key.json"
+          SHORT=$(curl -s "https://yeumoney.com/QL_api.php?token=${YEUMONEY_TOKEN}&format=json&url=${URL}" | jq -r '.shortenedUrl')
+          echo "Shortened URL: $SHORT"
 
-      - name: Commit & push generated files
+      - name: Commit and push
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "actions@github.com"
-          git add key_today.json yeu_shortlink.txt redirect.html || true
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Auto-update daily key & YeuMoney shortlink [skip ci]"
-            git push origin HEAD:$(git rev-parse --abbrev-ref HEAD)
-          fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add key.json
+          git commit -m "Update daily key"
+          git push
