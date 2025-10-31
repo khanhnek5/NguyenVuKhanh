@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from datetime import datetime
-import random  # Add: Import random
+import random  # For random suffix
 
 print("=== START generate.py ===")
 
@@ -14,10 +14,10 @@ print(f"[DEBUG] INDEX_HTML_URL: {index_url or '(missing)'}")
 
 today = datetime.now().strftime("%Y-%m-%d")
 date_part = today.replace('-', '')  # YYYYMMDD
-random_suffix = ''.join(random.choices('ABCDEF123456', k=6))  # Add: Random 6 ký tự (A-F0-6)
+random_suffix = ''.join(random.choices('ABCDEF123456', k=6))  # Random 6 ký tự (A-F0-6)
 key = f"K-{date_part}-{random_suffix}"  # e.g., K-20251031-ABC123
 
-print(f"[DEBUG] Generated key: {key}")  # Add: Debug để check
+print(f"[DEBUG] Generated key: {key}")
 
 # Ghi file key.json (và copy to key_today.json cho index.html)
 try:
@@ -30,7 +30,6 @@ try:
 except Exception as e:
     print("[ERR] Cannot write key files:", e)
 
-# ... (giữ nguyên phần API YeuMoney, shortlink.json, yeu_shortlink.txt, redirect.html)
 # Gọi API YeuMoney
 shortlink = None
 if api_token:
@@ -41,13 +40,21 @@ if api_token:
             timeout=15
         )
         print("[DEBUG] YeuMoney status:", resp.status_code)
+        print("[DEBUG] Content-Type:", resp.headers.get('content-type', 'unknown'))
         print("[DEBUG] YeuMoney raw response:", resp.text[:200])
-        data = resp.json()
-        if data.get("shortenedUrl"):
-            shortlink = data["shortenedUrl"]
-            print("[OK] Shortlink:", shortlink)
+
+        # Check if JSON before parse
+        if 'application/json' in resp.headers.get('content-type', ''):
+            data = resp.json()
+            if data.get("shortenedUrl"):
+                shortlink = data["shortenedUrl"]
+                print("[OK] Shortlink:", shortlink)
+            else:
+                print("[WARN] No shortenedUrl in response:", data)
         else:
-            print("[WARN] No shortenedUrl in response.")
+            print("[WARN] Response not JSON (HTML?), skipping shortlink.")
+    except json.JSONDecodeError as e:
+        print("[ERR] JSON parse error (HTML response?):", e)
     except Exception as e:
         print("[ERR] YeuMoney API error:", e)
 else:
