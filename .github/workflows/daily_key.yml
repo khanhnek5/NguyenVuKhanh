@@ -9,32 +9,51 @@ jobs:
   generate_key:
     runs-on: ubuntu-latest
     steps:
-      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Cài Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.x"
 
-      # 3️⃣ Cài requests nếu chưa có
-      - name: Install dependencies
+      - name: Install requests
         run: pip install requests
 
-      # 4️⃣ Chạy generate.py để sinh key + rút gọn link
-      - name: Generate key and shortlink
+      - name: Generate daily key and YeuMoney shortlink
         env:
           YEUMONEY_API_TOKEN: ${{ secrets.YEUMONEY_API_TOKEN }}
           INDEX_HTML_URL: https://khanhnek5.github.io/NguyenVuKhanh/index.html
-        run: python generate.py
+        run: |
+          import os, random, string, json, urllib.parse, requests
+          from datetime import datetime
 
-      # 5️⃣ Commit các file mới tạo
-      - name: Commit key files
+          # --- Sinh key ---
+          key = "KhanhMG-" + "".join(random.choices(string.ascii_letters + string.digits, k=12))
+          data = {"key": key, "generated_at": datetime.utcnow().isoformat()+"Z"}
+          with open("key_today.json","w", encoding="utf-8") as f:
+              json.dump(data,f,ensure_ascii=False,indent=2)
+          print("✅ Key hôm nay:", key)
+
+          # --- Tạo URL index.html kèm key ---
+          index_url = os.environ["INDEX_HTML_URL"].rstrip('/') + "?t=" + urllib.parse.quote(key, safe='')
+
+          # --- Gọi API YeuMoney ---
+          api_token = os.environ["YEUMONEY_API_TOKEN"]
+          api_url = f"https://yeumoney.com/QL_api.php?token={api_token}&format=text&url={urllib.parse.quote(index_url,safe='')}"
+          r = requests.get(api_url, timeout=15)
+          r.raise_for_status()
+          short = r.text.strip()
+          if not short:
+              raise Exception("YeuMoney trả về rỗng")
+          with open("yeu_shortlink.txt","w", encoding="utf-8") as f:
+              f.write(short + "\n")
+          print("✅ Link rút gọn YeuMoney:", short)
+
+      - name: Commit key and shortlink
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add key_today.json yeu_shortlink.txt redirect.html
-          git commit -m "Update daily key and shortlink" || echo "No changes to commit"
+          git add key_today.json yeu_shortlink.txt
+          git commit -m "Update daily key and shortlink"
           git push
