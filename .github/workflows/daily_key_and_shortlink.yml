@@ -2,32 +2,32 @@ name: Daily Key Generation
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Mỗi ngày 0h00
+    - cron: '0 0 * * *'  # 0h00 hàng ngày
   workflow_dispatch:
 
 jobs:
   generate-key:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Generate daily key
+      - name: Generate random daily key
         run: |
           CHARSET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
           KEY="KhanhMG-$(cat /dev/urandom | tr -dc $CHARSET | head -c 12)"
           echo "{\"key\":\"$KEY\"}" > key.json
           echo "Generated key: $KEY"
 
-      - name: Shorten key link via YeuMoney
+      - name: Shorten key.json link via YeuMoney
         env:
           YEUMONEY_TOKEN: ${{ secrets.YEUMONEY_TOKEN }}
         run: |
-          URL="https://khanhnek5.github.io/repo-name/key.json"
+          URL="https://$GITHUB_REPOSITORY.github.io/key.json"
           SHORT=$(curl -s "https://yeumoney.com/QL_api.php?token=${YEUMONEY_TOKEN}&format=json&url=${URL}" | jq -r '.shortenedUrl')
           echo "Shortened URL: $SHORT"
 
-      - name: Commit and push
+      - name: Commit and push key.json
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
