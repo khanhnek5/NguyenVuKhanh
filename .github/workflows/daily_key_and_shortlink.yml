@@ -1,36 +1,56 @@
-name: Daily Key Generation
+name: Daily Key & Shortlink
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 0h00 hàng ngày
+    - cron: "0 0 * * *" # 0h00 mỗi ngày
   workflow_dispatch:
 
 jobs:
-  generate-key:
+  generate_key:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Generate random daily key
-        run: |
-          CHARSET="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-          KEY="KhanhMG-$(cat /dev/urandom | tr -dc $CHARSET | head -c 12)"
-          echo "{\"key\":\"$KEY\"}" > key.json
-          echo "Generated key: $KEY"
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
 
-      - name: Shorten key.json link via YeuMoney
-        env:
-          YEUMONEY_TOKEN: ${{ secrets.YEUMONEY_TOKEN }}
+      - name: Generate daily key and YeuMoney shortlink
         run: |
-          URL="https://$GITHUB_REPOSITORY.github.io/key.json"
-          SHORT=$(curl -s "https://yeumoney.com/QL_api.php?token=${YEUMONEY_TOKEN}&format=json&url=${URL}" | jq -r '.shortenedUrl')
-          echo "Shortened URL: $SHORT"
+          import random, string, json, urllib.parse, requests
+          
+          # --- Sinh key ---
+          letters = string.ascii_letters + string.digits
+          key = "KhanhMG-" + "".join(random.choices(letters, k=12))
+          
+          # --- Lưu key JSON ---
+          data = {"key": key}
+          with open("key.json", "w") as f:
+              json.dump(data, f)
+          
+          # --- Tạo link rút gọn YeuMoney ---
+          api_token = "769323f441b8e15f97640d5d716bd50098b884b4328a599152cbcf1519af4b84"
+          original_url = "https://khanhnek5.github.io/NguyenVuKhanh/key.json"
+          url_encoded = urllib.parse.quote(original_url, safe='')
+          api_url = f"https://yeumoney.com/QL_api.php?token={api_token}&format=json&url={url_encoded}"
+          
+          resp = requests.get(api_url).json()
+          short_link = resp.get("shortenedUrl","")
+          
+          # --- Lưu shortlink JSON ---
+          link_data = {"short_link": short_link}
+          with open("shortlink.json","w") as f:
+              json.dump(link_data,f)
+          
+          print(f"✅ Key hôm nay: {key}")
+          print(f"✅ Link rút gọn YeuMoney: {short_link}")
 
-      - name: Commit and push key.json
+      - name: Commit key and shortlink
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add key.json
-          git commit -m "Update daily key"
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add key.json shortlink.json
+          git commit -m "Update daily key and shortlink"
           git push
