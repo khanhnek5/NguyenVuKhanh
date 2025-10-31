@@ -18,7 +18,7 @@ jobs:
           python-version: "3.x"
 
       - name: Install requests
-        run: pip install --quiet requests
+        run: pip install --quiet requests || true  # Fix: continue nếu pip fail
 
       - name: Show env (for debug)
         run: |
@@ -49,6 +49,15 @@ jobs:
           INDEX_HTML_URL: "https://khanhnek5.github.io/NguyenVuKhanh/index.html"
         continue-on-error: true
 
+      - name: Rename to key_today.json (for index.html)
+        run: |
+          if [ -f key.json ]; then
+            cp key.json key_today.json || true
+            echo "---- Created key_today.json ----"
+            cat key_today.json || true
+          fi
+        continue-on-error: true
+
       - name: Show generated files
         run: |
           echo "---- ls after run ----"
@@ -57,8 +66,14 @@ jobs:
           echo "---- key.json ----"
           if [ -f key.json ]; then cat key.json || true; else echo "key.json NOT FOUND"; fi
           echo
+          echo "---- key_today.json ----"
+          if [ -f key_today.json ]; then cat key_today.json || true; else echo "key_today.json NOT FOUND"; fi
+          echo
           echo "---- shortlink.json ----"
           if [ -f shortlink.json ]; then cat shortlink.json || true; else echo "shortlink.json NOT FOUND"; fi
+          echo
+          echo "---- yeu_shortlink.txt ----"
+          if [ -f yeu_shortlink.txt ]; then cat yeu_shortlink.txt || true; else echo "yeu_shortlink.txt NOT FOUND"; fi
           echo
           echo "---- redirect.html ----"
           if [ -f redirect.html ]; then sed -n '1,200p' redirect.html || true; else echo "redirect.html NOT FOUND"; fi
@@ -68,7 +83,7 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add key.json shortlink.json redirect.html || true
+          git add key.json key_today.json shortlink.json redirect.html yeu_shortlink.txt || true  # Fix: add full
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
