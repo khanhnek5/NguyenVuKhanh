@@ -10,6 +10,7 @@
   h2 { margin-bottom:20px; }
   button { padding:10px 20px; margin-top:10px; cursor:pointer; border:none; background:#28a745; color:#fff; border-radius:5px; font-size:16px; }
   #countdown { margin-top:10px; color:#555; font-size:14px; }
+  a { color:#007bff; text-decoration:none; margin-top:10px; display:inline-block; }
 </style>
 </head>
 <body>
@@ -19,6 +20,7 @@
   <p id="key">Đang tải key...</p>
   <button id="copyBtn">Copy Key</button>
   <p id="countdown"></p>
+  <a href="redirect.html">Lấy key qua shortlink (earn!)</a>  <!-- Suggest: Link đến redirect -->
 </div>
 
 <script>
@@ -26,6 +28,9 @@ async function loadKey() {
   try {
     // --- Fetch key từ GitHub Pages ---
     const res = await fetch('https://khanhnek5.github.io/NguyenVuKhanh/key_today.json?ts=' + Date.now());
+    if (!res.ok) {  // Fix: Check HTTP status
+      throw new Error('Fetch failed: ' + res.status);
+    }
     const data = await res.json();
     const key = data.key || null;
 
