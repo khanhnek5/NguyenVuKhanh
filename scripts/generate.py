@@ -1,91 +1,70 @@
-import os, random, string, json, urllib.parse, requests, time
+import os
+import json
+import requests
 from datetime import datetime
 
-# --- Môi trường ---
-API_TOKEN = os.environ.get("YEUMONEY_API_TOKEN")
-INDEX_HTML = os.environ.get("INDEX_HTML_URL", "").rstrip('/')
+print("=== START generate.py ===")
 
-if not API_TOKEN:
-    print("❌ Thiếu YEUMONEY_API_TOKEN trong Secrets (Settings → Secrets → Actions).")
-if not INDEX_HTML:
-    print("❌ Thiếu INDEX_HTML_URL trong Secrets hoặc file workflow.")
-# Không exit ở đây, vẫn tiếp tục để không fail build
+api_token = os.getenv("YEUMONEY_API_TOKEN", "").strip()
+index_url = os.getenv("INDEX_HTML_URL", "").strip()
 
-# --- Sinh key ---
-def gen_key(n=8):
-    return "KhanhMG-" + ''.join(random.choices(string.ascii_letters + string.digits, k=n))
+print(f"[DEBUG] YEUMONEY_API_TOKEN: {'SET' if api_token else 'MISSING'}")
+print(f"[DEBUG] INDEX_HTML_URL: {index_url or '(missing)'}")
 
-key = gen_key()
-print(f"✅ Key hôm nay: {key}")
+today = datetime.now().strftime("%Y-%m-%d")
+key = f"K-{today.replace('-', '')}"
 
-# --- Ghi key.json ---
-data = {"key": key, "generated_at": datetime.utcnow().isoformat() + "Z"}
-with open("key.json", "w", encoding="utf-8") as f:
-    json.dump(data, f, ensure_ascii=False, indent=2)
-print("📦 Ghi key.json thành công.")
+# Ghi file key.json
+try:
+    with open("key.json", "w", encoding="utf-8") as f:
+        json.dump({"date": today, "key": key}, f, ensure_ascii=False, indent=2)
+    print("[OK] key.json created.")
+except Exception as e:
+    print("[ERR] Cannot write key.json:", e)
 
-# --- URL cần rút gọn ---
-target_url = f"{INDEX_HTML}?t={urllib.parse.quote(key, safe='')}"
-print("🔗 URL gốc:", target_url)
-
-# --- Rút gọn link (retry 3 lần) ---
-def shorten(api_token, url):
-    api_url = f"https://yeumoney.com/QL_api.php?token={api_token}&format=text&url={urllib.parse.quote(url, safe='')}"
-    for i in range(3):
-        try:
-            r = requests.get(api_url, timeout=15)
-            txt = r.text.strip()
-            if r.status_code == 200 and txt and txt.startswith("https"):
-                return txt
-            print(f"⚠️ Lần {i+1}: YeuMoney không phản hồi hợp lệ, thử lại...")
-            time.sleep(2)
-        except Exception as e:
-            print(f"⚠️ Lỗi kết nối lần {i+1}: {e}")
-            time.sleep(2)
-    return ""
-
-short_link = shorten(API_TOKEN, target_url)
-
-if short_link:
-    print("✅ Shortlink:", short_link)
+# Gọi API YeuMoney
+shortlink = None
+if api_token:
+    try:
+        resp = requests.post(
+            "https://yeumoney.com/api/link",
+            data={"api": api_token, "url": index_url},
+            timeout=15
+        )
+        print("[DEBUG] YeuMoney status:", resp.status_code)
+        print("[DEBUG] YeuMoney raw response:", resp.text[:200])
+        data = resp.json()
+        if data.get("shortenedUrl"):
+            shortlink = data["shortenedUrl"]
+            print("[OK] Shortlink:", shortlink)
+        else:
+            print("[WARN] No shortenedUrl in response.")
+    except Exception as e:
+        print("[ERR] YeuMoney API error:", e)
 else:
-    print("⚠️ Không tạo được shortlink, dùng URL gốc.")
-    short_link = target_url
+    print("[WARN] Missing YeuMoney API token, skipping shortlink.")
 
-# --- Lưu shortlink.json ---
-with open("shortlink.json", "w", encoding="utf-8") as f:
-    json.dump({"short_link": short_link, "updated_at": datetime.utcnow().isoformat()+"Z"}, f, ensure_ascii=False, indent=2)
-print("📦 Ghi shortlink.json xong.")
+# Ghi file shortlink.json
+try:
+    with open("shortlink.json", "w", encoding="utf-8") as f:
+        json.dump({"date": today, "shortlink": shortlink}, f, ensure_ascii=False, indent=2)
+    print("[OK] shortlink.json created.")
+except Exception as e:
+    print("[ERR] Cannot write shortlink.json:", e)
 
-# --- Tạo redirect.html ---
-redirect_html = f"""<!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="utf-8">
-<title>Đang chuyển hướng...</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-body {{
-  background:#0d1117;
-  color:#c9d1d9;
-  font-family:Arial, sans-serif;
-  text-align:center;
-  padding-top:100px;
-}}
-a {{
-  color:#58a6ff;
-  text-decoration:none;
-}}
-</style>
-</head>
-<body>
-  <h2>Đang chuyển hướng tới trang lấy key...</h2>
-  <p>Nếu không tự động, <a href="{short_link}">bấm vào đây</a>.</p>
-  <script>setTimeout(()=>location.href="{short_link}",1000);</script>
-</body>
-</html>
-"""
-with open("redirect.html", "w", encoding="utf-8") as f:
+# Ghi redirect.html
+try:
+    html = f"""<html>
+<head><meta http-equiv="refresh" content="0;url={shortlink or '#'}"></head>
+<body><p>Redirecting to YeuMoney...</p></body>
+</html>"""
+    with open("redirect.html", "w", encoding="utf-8") as f:
+        f.write(html)
+    print("[OK] redirect.html created.")
+except Exception as e:
+    print("[ERR] Cannot write redirect.html:", e)
+
+print("=== END generate.py ===")with open("redirect.html", "w", encoding="utf-8") as f:
     f.write(redirect_html)
 print("📄 Tạo redirect.html xong.")
 
