@@ -24,6 +24,7 @@ body {
     border-radius: 10px;
     display: inline-block;
     margin-top: 20px;
+    min-width: 300px;
 }
 .copy-btn {
     margin-top: 10px;
@@ -45,7 +46,7 @@ body {
   <div class="banner-line">© Bản quyền thuộc về Nguyễn Vũ Khanh</div>
 </div>
 
-<div class="key-box" id="keyBox">Đang kiểm tra token...</div><br>
+<div class="key-box" id="keyBox">Đang kiểm tra token và tải key...</div><br>
 <button class="copy-btn" onclick="copyKey()">Copy Key</button>
 
 <script>
@@ -59,25 +60,37 @@ async function animateBanner(){
     }
 }
 
-// Kiểm tra token YeuMoney tự động
-async function checkTokenAndFetchKey(){
-    const apiToken = '769323f441b8e15f97640d5d716bd50098b884b4328a599152cbcf1519af4b84';
+async function fetchKey(){
     const keyJsonUrl = 'key.json?timestamp=' + Date.now();
+    try{
+        const res = await fetch(keyJsonUrl);
+        const data = await res.json();
+        return data.key;
+    }catch(e){
+        return null;
+    }
+}
 
-    try {
-        // Gọi API YeuMoney (dạng JSON)
-        const yeuRes = await fetch(`https://yeumoney.com/QL_api.php?token=${apiToken}&format=json&url=${encodeURIComponent(location.href)}`);
-        const yeuData = await yeuRes.json();
-
-        if(yeuData.status === 'success' && yeuData.shortenedUrl){
-            // Người dùng đã vượt link -> fetch key
-            const keyRes = await fetch(keyJsonUrl);
-            const keyData = await keyRes.json();
-            document.getElementById('keyBox').innerText = keyData.key;
+// Check token YeuMoney tự động
+async function checkTokenAndShowKey(){
+    const apiToken = '769323f441b8e15f97640d5d716bd50098b884b4328a599152cbcf1519af4b84';
+    const currentUrl = encodeURIComponent(location.href);
+    const yeuUrl = `https://yeumoney.com/QL_api.php?token=${apiToken}&format=json&url=${currentUrl}`;
+    
+    try{
+        const res = await fetch(yeuUrl);
+        const data = await res.json();
+        if(data.status === 'success' && data.shortenedUrl){
+            const key = await fetchKey();
+            if(key){
+                document.getElementById('keyBox').innerText = key;
+            } else {
+                document.getElementById('keyBox').innerText = 'Key hôm nay chưa sẵn sàng, vui lòng thử lại sau.';
+            }
         } else {
             document.getElementById('keyBox').innerText = 'Vui lòng vượt link YeuMoney để lấy key hôm nay.';
         }
-    } catch(e){
+    }catch(e){
         document.getElementById('keyBox').innerText = 'Lỗi kiểm tra token, thử lại sau.';
     }
 }
@@ -89,7 +102,7 @@ function copyKey(){
 }
 
 animateBanner();
-checkTokenAndFetchKey();
+checkTokenAndShowKey();
 </script>
 
 </body>
